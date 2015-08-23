@@ -1,0 +1,43 @@
+{
+  "name": "mediasource",
+  "description": "MediaSource API as a node.js Writable stream",
+  "version": "0.0.0",
+  "author": {
+    "name": "Feross Aboukhadijeh",
+    "email": "feross@feross.org",
+    "url": "http://feross.org/"
+  },
+  "bugs": {
+    "url": "https://github.com/feross/mediasource/issues"
+  },
+  "dependencies": {
+    "inherits": "^2.0.1"
+  },
+  "devDependencies": {
+    "brfs": "^1.4.1",
+    "standard": "^5.0.0",
+    "tape": "^4.0.0",
+    "zuul": "^3.0.0"
+  },
+  "homepage": "https://github.com/feross/mediasource",
+  "keywords": [
+    "mediasource",
+    "media source",
+    "mediasource api",
+    "writable",
+    "write",
+    "stream",
+    "write stream",
+    "writable stream"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/feross/mediasource.git"
+  },
+  "scripts": {
+    "test": "standard && zuul -- test/*.js",
+    "test-local": "zuul --local -- test/*.js"
+  }
+}
