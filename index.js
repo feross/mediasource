@@ -1,35 +1,36 @@
 module.exports = MediaElementWrapper
 
-var EventEmitter = require('events')
 var inherits = require('inherits')
-var stream = require('stream')
+var stream = require('readable-stream')
 var toArrayBuffer = require('to-arraybuffer')
 
 var MediaSource = typeof window !== 'undefined' && window.MediaSource
 
-var DEFAULT_MAX_BUFFER_DURATION = 60 // seconds
+var DEFAULT_BUFFER_DURATION = 60 // seconds
 
 function MediaElementWrapper (elem, opts) {
   var self = this
   if (!(self instanceof MediaElementWrapper)) return new MediaElementWrapper(elem, opts)
-  EventEmitter.call(self)
 
   if (!MediaSource) throw new Error('web browser lacks MediaSource support')
 
-  // if (!opts) opts = {}
-
+  self._opts = opts || {}
   self._elem = elem
   self._mediaSource = new MediaSource()
-  // self._sourceBuffer = null
-  // self._cb = null
+  self._streams = []
+  self.detailedError = null
 
-  // self._type = opts.type || getType(opts.extname)
-  // if (!self._type) throw new Error('missing `opts.type` or `opts.extname` options')
+  self._errorHandler = function () {
+    self._elem.removeEventListener('error', self._errorHandler)
+    var streams = self._streams.slice()
+    streams.forEach(function (stream) {
+      stream.destroy(self._elem.error)
+    })
+  }
+  self._elem.addEventListener('error', self._errorHandler)
 
   self._elem.src = window.URL.createObjectURL(self._mediaSource)
 }
-
-inherits(MediaElementWrapper, EventEmitter)
 
 /*
  * `obj` can be a previous value returned by this function
@@ -38,17 +39,23 @@ inherits(MediaElementWrapper, EventEmitter)
 MediaElementWrapper.prototype.getStream = function (obj) {
   var self = this
 
-  return new MediaSourceStream(self._elem, self._mediaSource, obj)
+  return new MediaSourceStream(self, obj)
 }
 
 inherits(MediaSourceStream, stream.Writable)
 
-function MediaSourceStream (elem, mediaSource, obj) {
+function MediaSourceStream (wrapper, obj) {
   var self = this
   stream.Writable.call(self)
 
-  self._elem = elem
-  self._mediaSource = mediaSource
+  self._wrapper = wrapper
+  self._elem = wrapper._elem
+  self._mediaSource = wrapper._mediaSource
+  self._allStreams = wrapper._streams
+  self._allStreams.push(self)
+  self._bufferDuration = wrapper._opts.bufferDuration || DEFAULT_BUFFER_DURATION
+
+  self._openHandler = self._onSourceOpen.bind(self, obj)
   self._flowHandler = self._flow.bind(self)
 
   if (typeof obj === 'string') {
@@ -56,11 +63,7 @@ function MediaSourceStream (elem, mediaSource, obj) {
     if (self._mediaSource.readyState === 'open') {
       self._createSourceBuffer(obj)
     } else {
-      function onSourceOpen () {
-        self._mediaSource.removeEventListener('sourceopen', onSourceOpen)
-        self._createSourceBuffer(obj)
-      }
-      self._mediaSource.addEventListener('sourceopen', onSourceOpen)
+      self._mediaSource.addEventListener('sourceopen', self._openHandler)
     }
   } else if (obj._sourceBuffer) {
     obj.destroy()
@@ -72,17 +75,31 @@ function MediaSourceStream (elem, mediaSource, obj) {
 
   self._elem.addEventListener('timeupdate', self._flowHandler)
 
-  self.on('error', function () {
+  self.on('error', function (err) {
+    // be careful not to overwrite any existing detailedError values
+    if (err && !self._wrapper.detailedError) {
+      self._wrapper.detailedError = err
+    }
     try {
       self._mediaSource.endOfStream('decode')
     } catch (err) {}
   })
 
-  // TODO: this doesn't work when there are multiple streams attached to the same element.
-  // We need to wait until they are all finished before calling this.
   self.on('finish', function () {
-    self._mediaSource.endOfStream()
+    if (self.destroyed) return
+    self._finished = true
+    if (self._allStreams.every(function (other) { return other._finished })) {
+      self._mediaSource.endOfStream()
+    }
   })
+}
+
+MediaSourceStream.prototype._onSourceOpen = function (type) {
+  var self = this
+  if (self.destroyed) return
+
+  self._mediaSource.removeEventListener('sourceopen', self._openHandler)
+  self._createSourceBuffer(type)
 }
 
 MediaSourceStream.prototype.destroy = function (err) {
@@ -90,6 +107,10 @@ MediaSourceStream.prototype.destroy = function (err) {
   if (self.destroyed) return
   self.destroyed = true
 
+  // Remove from allStreams
+  self._allStreams.splice(self._allStreams.indexOf(self), 1)
+
+  self._mediaSource.removeEventListener('sourceopen', self._openHandler)
   self._elem.removeEventListener('timeupdate', self._flowHandler)
   if (self._sourceBuffer) {
     self._sourceBuffer.removeEventListener('updateend', self._flowHandler)
@@ -115,8 +136,7 @@ MediaSourceStream.prototype._createSourceBuffer = function (type) {
       cb()
     }
   } else {
-    // TODO: this is a change from the previous api
-    self.emit('error', new Error('The provided type is not supported'))
+    self.destroy(new Error('The provided type is not supported'))
   }
 }
 
@@ -138,7 +158,11 @@ MediaSourceStream.prototype._write = function (chunk, encoding, cb) {
   try {
     self._sourceBuffer.appendBuffer(toArrayBuffer(chunk))
   } catch (err) {
-    self.emit('error', err)
+    // appendBuffer can throw for a number of reasons, most notably when the data
+    // being appended is invalid or if appendBuffer is called after another error
+    // already occurred on the media element. In Chrome, there may be useful debugging
+    // info in chrome://media-internals
+    self.destroy(err)
     return
   }
   self._cb = cb
@@ -153,7 +177,7 @@ MediaSourceStream.prototype._flow = function () {
 
   if (self._mediaSource.readyState === 'open') {
     // check buffer size
-    if (self._getBufferDuration() > DEFAULT_MAX_BUFFER_DURATION) {
+    if (self._getBufferDuration() > self._bufferDuration) {
       return
     }
   }
@@ -165,49 +189,38 @@ MediaSourceStream.prototype._flow = function () {
   }
 }
 
-var EPSILON = 0 // TODO: if this actually works, let's cut out the logic associated with it
+MediaSourceStream.prototype._onError = function (err) {
+  var self = this
+}
+
+// TODO: if zero actually works in all browsers, remove the logic associated with this below
+var EPSILON = 0
 
 MediaSourceStream.prototype._getBufferDuration = function () {
   var self = this
 
   var buffered = self._sourceBuffer.buffered
-  var currentTime = self._elem.currentTime;
-  var bufferEnd = -1; // end of the buffer
+  var currentTime = self._elem.currentTime
+  var bufferEnd = -1 // end of the buffer
   // This is a little over complex because some browsers seem to separate the
   // buffered region into multiple sections with slight gaps.
-  // TODO: figure out why there are gaps in the buffer. This may be due to
-  // timestamp errors in mp4box, or due to browsers not liking the single-frame
-  // segments mp4box generates
   for (var i = 0; i < buffered.length; i++) {
-    var start = buffered.start(i);
-    var end = buffered.end(i) + EPSILON;
+    var start = buffered.start(i)
+    var end = buffered.end(i) + EPSILON
 
     if (start > currentTime) {
       // Reached past the joined buffer
-      break;
+      break
     } else if (bufferEnd >= 0 || currentTime <= end) {
       // Found the start/continuation of the joined buffer
-      bufferEnd = end;
+      bufferEnd = end
     }
   }
 
-  var bufferedTime = bufferEnd - currentTime;
-  if (bufferedTime < 0)
-    bufferedTime = 0;
-
-  // debug('Buffer length: %f', bufferedTime);
+  var bufferedTime = bufferEnd - currentTime
+  if (bufferedTime < 0) {
+    bufferedTime = 0
+  }
 
   return bufferedTime
-}
-
-function getType (extname) {
-  if (!extname) return null
-  if (extname[0] !== '.') extname = '.' + extname
-  return {
-    '.m4a': 'audio/mp4; codecs="mp4a.40.5"',
-    '.m4v': 'video/mp4; codecs="avc1.640029, mp4a.40.5"',
-    '.mp3': 'audio/mpeg',
-    '.mp4': 'video/mp4; codecs="avc1.640029, mp4a.40.5"',
-    '.webm': 'video/webm; codecs="vorbis, vp8"'
-  }[extname]
 }
