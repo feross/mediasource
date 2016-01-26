@@ -1,5 +1,5 @@
 var fs = require('fs')
-var MediaSourceStream = require('../')
+var MediaElementWrapper = require('../')
 var stream = require('stream')
 var test = require('tape')
 
@@ -10,7 +10,8 @@ test('basic test', function (t) {
 
   var elem = createElem('video')
   var readable = new stream.PassThrough()
-  var writable = new MediaSourceStream(elem, { extname: '.webm' })
+  var wrapper = new MediaElementWrapper(elem)
+  var writable = wrapper.getStream('video/webm; codecs="vorbis, vp8"')
 
   readable.on('error', function (err) { t.fail(err) })
   writable.on('error', function (err) { t.fail(err) })

@@ -11,7 +11,7 @@
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/mediasource.svg)](https://saucelabs.com/u/mediasource)
 
-Stream video/audio into a `<video>` or `<audio>` tag by treating the html tag as a node.js Writable stream.
+Stream video/audio into a `<video>` or `<audio>` tag by attaching node.js Writable streams.
 
 This package is used by [WebTorrent](http://webtorrent.io) (along with other approaches)
 to support media streaming.
@@ -25,7 +25,7 @@ npm install mediasource
 ## usage
 
 ```js
-var MediaSourceStream = require('mediasource')
+var MediaElementWrapper = require('mediasource')
 
 function createElem (tagName) {
   var elem = document.createElement(tagName)
@@ -39,10 +39,19 @@ function createElem (tagName) {
 var elem = createElem('video')
 
 var readable = // ... get a readable stream from somewhere
-var writable = new MediaSourceStream(elem, { extname: '.webm' })
+var wrapper = new MediaElementWrapper(elem)
+// The correct mime type, including codecs, must be provided
+var writable = wrapper.getStream('video/webm; codecs="vorbis, vp8"')
 
-elem.addEventListener('error', function (err) {
+elem.addEventListener('error', function () {
   // listen for errors on the video/audio element directly
+  var errorCode = elem.error
+  var detailedError = wrapper.detailedError
+  // wrapper.detailedError will often have a more detailed error message
+})
+
+writable.on('error', function (err) {
+  // listening to the stream 'error' event is optional
 })
 
 readable.pipe(writable)
@@ -50,19 +59,28 @@ readable.pipe(writable)
 // media should start playing now!
 ```
 
+### advanced usage
+
+`wrapper.getStream()` can be called multiple times if different tracks (e.g. audio and video) need to
+be passed in separate streams. Each call should be made with the correct mime type.
+
+Instead of a mime type, an existing MediaSourceStream (as returned by `wrapper.getStream()`) can be
+passed as the single argument to `wrapper.getStream()`, which will cause the existing stream to be
+replaced by the newly returned stream. This is useful when you want to cancel the existing stream
+and replace it with a new one, e.g. when seeking.
+
 ### options
 
-#### opts.type
+#### opts.bufferDuration
 
-Explicitly set the MediaSource SourceBuffer's mime type (recommended).
-
-#### opts.extname
-
-Use a file extension (.m4a, .m4v, .mp4, .mp3, .webm) to infer the MediaSource SourceBuffer's mime type.
+Specify how many seconds of media should be put into the browser's buffer before applying backpressure.
 
 ### errors
 
 Handle errors by listening to the `'error'` event on the `<video>` or `<audio>` tag.
+
+Some (but not all) errors will also cause `wrapper.detailedError` to be set to an error value that has
+a more informative error message.
 
 ## license
 
