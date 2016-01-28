@@ -11,7 +11,7 @@ test('basic test', function (t) {
   var elem = createElem('video')
   var readable = new stream.PassThrough()
   var wrapper = new MediaElementWrapper(elem)
-  var writable = wrapper.getStream('video/webm; codecs="vorbis, vp8"')
+  var writable = wrapper.createWriteStream('video/webm; codecs="vorbis, vp8"')
 
   readable.on('error', function (err) { t.fail(err) })
   writable.on('error', function (err) { t.fail(err) })

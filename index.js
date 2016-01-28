@@ -36,7 +36,7 @@ function MediaElementWrapper (elem, opts) {
  * `obj` can be a previous value returned by this function
  * or a string
  */
-MediaElementWrapper.prototype.getStream = function (obj) {
+MediaElementWrapper.prototype.createWriteStream = function (obj) {
   var self = this
 
   return new MediaSourceStream(self, obj)
@@ -70,7 +70,7 @@ function MediaSourceStream (wrapper, obj) {
     self._sourceBuffer = obj._sourceBuffer // Copy over the old sourceBuffer
     self._sourceBuffer.addEventListener('updateend', self._flowHandler)
   } else {
-    throw new Error('The argument to MediaElementWrapper.getStream must be a string or a previous stream returned from that function')
+    throw new Error('The argument to MediaElementWrapper.createWriteStream must be a string or a previous stream returned from that function')
   }
 
   self._elem.addEventListener('timeupdate', self._flowHandler)

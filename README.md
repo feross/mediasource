@@ -41,7 +41,7 @@ var elem = createElem('video')
 var readable = // ... get a readable stream from somewhere
 var wrapper = new MediaElementWrapper(elem)
 // The correct mime type, including codecs, must be provided
-var writable = wrapper.getStream('video/webm; codecs="vorbis, vp8"')
+var writable = wrapper.createWriteStream('video/webm; codecs="vorbis, vp8"')
 
 elem.addEventListener('error', function () {
   // listen for errors on the video/audio element directly
@@ -61,11 +61,11 @@ readable.pipe(writable)
 
 ### advanced usage
 
-`wrapper.getStream()` can be called multiple times if different tracks (e.g. audio and video) need to
+`wrapper.createWriteStream()` can be called multiple times if different tracks (e.g. audio and video) need to
 be passed in separate streams. Each call should be made with the correct mime type.
 
-Instead of a mime type, an existing MediaSourceStream (as returned by `wrapper.getStream()`) can be
-passed as the single argument to `wrapper.getStream()`, which will cause the existing stream to be
+Instead of a mime type, an existing MediaSourceStream (as returned by `wrapper.createWriteStream()`) can be
+passed as the single argument to `wrapper.createWriteStream()`, which will cause the existing stream to be
 replaced by the newly returned stream. This is useful when you want to cancel the existing stream
 and replace it with a new one, e.g. when seeking.
 
