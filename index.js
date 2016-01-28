@@ -189,10 +189,6 @@ MediaSourceStream.prototype._flow = function () {
   }
 }
 
-MediaSourceStream.prototype._onError = function (err) {
-  var self = this
-}
-
 // TODO: if zero actually works in all browsers, remove the logic associated with this below
 var EPSILON = 0
 
