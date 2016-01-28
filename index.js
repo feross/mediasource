@@ -14,7 +14,8 @@ function MediaElementWrapper (elem, opts) {
 
   if (!MediaSource) throw new Error('web browser lacks MediaSource support')
 
-  self._opts = opts || {}
+  if (!opts) opts = {}
+  self._bufferDuration = opts.bufferDuration || DEFAULT_BUFFER_DURATION
   self._elem = elem
   self._mediaSource = new MediaSource()
   self._streams = []
@@ -53,7 +54,7 @@ function MediaSourceStream (wrapper, obj) {
   self._mediaSource = wrapper._mediaSource
   self._allStreams = wrapper._streams
   self._allStreams.push(self)
-  self._bufferDuration = wrapper._opts.bufferDuration || DEFAULT_BUFFER_DURATION
+  self._bufferDuration = wrapper._bufferDuration
 
   self._openHandler = self._onSourceOpen.bind(self, obj)
   self._flowHandler = self._flow.bind(self)
