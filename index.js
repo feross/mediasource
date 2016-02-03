@@ -43,6 +43,21 @@ MediaElementWrapper.prototype.createWriteStream = function (obj) {
   return new MediaSourceStream(self, obj)
 }
 
+/*
+ * Use to trigger an error on the underlying media element
+ */
+MediaElementWrapper.prototype.error = function (err) {
+  var self = this
+
+  // be careful not to overwrite any existing detailedError values
+  if (!self.detailedError) {
+    self.detailedError = err
+  }
+  try {
+    self._mediaSource.endOfStream('decode')
+  } catch (err) {}
+}
+
 inherits(MediaSourceStream, stream.Writable)
 
 function MediaSourceStream (wrapper, obj) {
@@ -76,21 +91,15 @@ function MediaSourceStream (wrapper, obj) {
 
   self._elem.addEventListener('timeupdate', self._flowHandler)
 
-  self.on('error', function (err) {
-    // be careful not to overwrite any existing detailedError values
-    if (err && !self._wrapper.detailedError) {
-      self._wrapper.detailedError = err
-    }
-    try {
-      self._mediaSource.endOfStream('decode')
-    } catch (err) {}
-  })
+  self.on('error', self._wrapper.error.bind(self._wrapper))
 
   self.on('finish', function () {
     if (self.destroyed) return
     self._finished = true
     if (self._allStreams.every(function (other) { return other._finished })) {
-      self._mediaSource.endOfStream()
+      try {
+        self._mediaSource.endOfStream()
+      } catch (e) {}
     }
   })
 }
