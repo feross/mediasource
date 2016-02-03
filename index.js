@@ -99,7 +99,7 @@ function MediaSourceStream (wrapper, obj) {
     if (self._allStreams.every(function (other) { return other._finished })) {
       try {
         self._mediaSource.endOfStream()
-      } catch (e) {}
+      } catch (err) {}
     }
   })
 }
