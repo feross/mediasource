@@ -1,9 +1,10 @@
 var fs = require('fs')
 var MediaElementWrapper = require('../')
+var path = require('path')
 var stream = require('stream')
 var test = require('tape')
 
-var FILE = fs.readFileSync(__dirname + '/test.webm')
+var FILE = fs.readFileSync(path.join(__dirname, 'test.webm'))
 
 test('basic test', function (t) {
   t.plan(2)
