@@ -70,19 +70,26 @@ function MediaSourceStream (wrapper, obj) {
   self._allStreams = wrapper._streams
   self._allStreams.push(self)
   self._bufferDuration = wrapper._bufferDuration
+  self._sourceBuffer = null
 
-  self._openHandler = self._onSourceOpen.bind(self, obj)
+  self._openHandler = self._onSourceOpen.bind(self)
   self._flowHandler = self._flow.bind(self)
 
   if (typeof obj === 'string') {
+    self._type = obj
     // Need to create a new sourceBuffer
     if (self._mediaSource.readyState === 'open') {
-      self._createSourceBuffer(obj)
+      self._createSourceBuffer()
     } else {
       self._mediaSource.addEventListener('sourceopen', self._openHandler)
     }
+  } else if (obj._sourceBuffer === null) {
+    obj.destroy()
+    self._type = obj._type // The old stream was created but hasn't finished initializing
+    self._mediaSource.addEventListener('sourceopen', self._openHandler)
   } else if (obj._sourceBuffer) {
     obj.destroy()
+    self._type = obj._type
     self._sourceBuffer = obj._sourceBuffer // Copy over the old sourceBuffer
     self._sourceBuffer.addEventListener('updateend', self._flowHandler)
   } else {
@@ -104,12 +111,12 @@ function MediaSourceStream (wrapper, obj) {
   })
 }
 
-MediaSourceStream.prototype._onSourceOpen = function (type) {
+MediaSourceStream.prototype._onSourceOpen = function () {
   var self = this
   if (self.destroyed) return
 
   self._mediaSource.removeEventListener('sourceopen', self._openHandler)
-  self._createSourceBuffer(type)
+  self._createSourceBuffer()
 }
 
 MediaSourceStream.prototype.destroy = function (err) {
@@ -133,12 +140,12 @@ MediaSourceStream.prototype.destroy = function (err) {
   self.emit('close')
 }
 
-MediaSourceStream.prototype._createSourceBuffer = function (type) {
+MediaSourceStream.prototype._createSourceBuffer = function () {
   var self = this
   if (self.destroyed) return
 
-  if (MediaSource.isTypeSupported(type)) {
-    self._sourceBuffer = self._mediaSource.addSourceBuffer(type)
+  if (MediaSource.isTypeSupported(self._type)) {
+    self._sourceBuffer = self._mediaSource.addSourceBuffer(self._type)
     self._sourceBuffer.addEventListener('updateend', self._flowHandler)
     if (self._cb) {
       var cb = self._cb
