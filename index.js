@@ -72,8 +72,12 @@ function MediaSourceStream (wrapper, obj) {
   self._bufferDuration = wrapper._bufferDuration
   self._sourceBuffer = null
 
-  self._openHandler = self._onSourceOpen.bind(self)
-  self._flowHandler = self._flow.bind(self)
+  self._openHandler = function () {
+    self._onSourceOpen()
+  }
+  self._flowHandler = function () {
+    self._flow()
+  }
 
   if (typeof obj === 'string') {
     self._type = obj
@@ -98,7 +102,9 @@ function MediaSourceStream (wrapper, obj) {
 
   self._elem.addEventListener('timeupdate', self._flowHandler)
 
-  self.on('error', self._wrapper.error.bind(self._wrapper))
+  self.on('error', function (err) {
+    self._wrapper.error(err)
+  })
 
   self.on('finish', function () {
     if (self.destroyed) return
