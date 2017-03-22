@@ -1,4 +1,4 @@
-# mediasource [![travis][travis-image]][travis-url] [![npm][npm-image]][npm-url] [![downloads][downloads-image]][downloads-url]
+# mediasource [![travis][travis-image]][travis-url] [![npm][npm-image]][npm-url] [![downloads][downloads-image]][downloads-url] [![javascript style guide][standard-image]][standard-url]
 
 [travis-image]: https://img.shields.io/travis/feross/mediasource/master.svg
 [travis-url]: https://travis-ci.org/feross/mediasource
@@ -6,6 +6,8 @@
 [npm-url]: https://npmjs.org/package/mediasource
 [downloads-image]: https://img.shields.io/npm/dm/mediasource.svg
 [downloads-url]: https://npmjs.org/package/mediasource
+[standard-image]: https://img.shields.io/badge/code_style-standard-brightgreen.svg
+[standard-url]: https://standardjs.com
 
 ### MediaSource API as a node.js Writable stream
 
