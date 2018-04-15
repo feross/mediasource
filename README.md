@@ -71,6 +71,18 @@ passed as the single argument to `wrapper.createWriteStream()`, which will cause
 replaced by the newly returned stream. This is useful when you want to cancel the existing stream
 and replace it with a new one, e.g. when seeking.
 
+### should one use this package?
+
+Naively using this package will not work for many video formats, nor will it support
+seeking. For an approach that is more likely to work for all video files, and
+supports seeking, take a look at
+[videostream](https://github.com/jhiesey/videostream).
+
+Or for a package that tries multiple approaches, including `videostream` and this
+package (`mediasource`), as well as a Blob API (non-streaming) approach, and works
+for many non-video file types, consider
+[render-media](https://github.com/feross/render-media).
+
 ### options
 
 #### opts.bufferDuration
