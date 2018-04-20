@@ -15,6 +15,7 @@ function MediaElementWrapper (elem, opts) {
   if (!MediaSource) throw new Error('web browser lacks MediaSource support')
 
   if (!opts) opts = {}
+  self._debug = opts.debug
   self._bufferDuration = opts.bufferDuration || DEFAULT_BUFFER_DURATION
   self._elem = elem
   self._mediaSource = new MediaSource()
@@ -53,9 +54,24 @@ MediaElementWrapper.prototype.error = function (err) {
   if (!self.detailedError) {
     self.detailedError = err
   }
+  self._dumpDebugData()
   try {
     self._mediaSource.endOfStream('decode')
   } catch (err) {}
+}
+
+/*
+ * When self._debug is set, dump all data to files
+ */
+MediaElementWrapper.prototype._dumpDebugData = function () {
+  var self = this
+
+  if (self._debug) {
+    self._debug = false // prevent multiple dumps on multiple errors
+    self._streams.forEach(function (stream, i) {
+      downloadBuffers(stream._debugBuffers, 'mediasource-stream-' + i)
+    })
+  }
 }
 
 inherits(MediaSourceStream, stream.Writable)
@@ -71,12 +87,18 @@ function MediaSourceStream (wrapper, obj) {
   self._allStreams.push(self)
   self._bufferDuration = wrapper._bufferDuration
   self._sourceBuffer = null
+  self._debugBuffers = []
 
   self._openHandler = function () {
     self._onSourceOpen()
   }
   self._flowHandler = function () {
     self._flow()
+  }
+  self._errorHandler = function (err) {
+    if (!self.destroyed) {
+      self.emit('error', err)
+    }
   }
 
   if (typeof obj === 'string') {
@@ -95,7 +117,9 @@ function MediaSourceStream (wrapper, obj) {
     obj.destroy()
     self._type = obj._type
     self._sourceBuffer = obj._sourceBuffer // Copy over the old sourceBuffer
+    self._debugBuffers = obj._debugBuffers // Copy over previous debug data
     self._sourceBuffer.addEventListener('updateend', self._flowHandler)
+    self._sourceBuffer.addEventListener('error', self._errorHandler)
   } else {
     throw new Error('The argument to MediaElementWrapper.createWriteStream must be a string or a previous stream returned from that function')
   }
@@ -110,6 +134,7 @@ function MediaSourceStream (wrapper, obj) {
     if (self.destroyed) return
     self._finished = true
     if (self._allStreams.every(function (other) { return other._finished })) {
+      self._wrapper._dumpDebugData()
       try {
         self._mediaSource.endOfStream()
       } catch (err) {}
@@ -137,6 +162,7 @@ MediaSourceStream.prototype.destroy = function (err) {
   self._elem.removeEventListener('timeupdate', self._flowHandler)
   if (self._sourceBuffer) {
     self._sourceBuffer.removeEventListener('updateend', self._flowHandler)
+    self._sourceBuffer.removeEventListener('error', self._errorHandler)
     if (self._mediaSource.readyState === 'open') {
       self._sourceBuffer.abort()
     }
@@ -153,6 +179,7 @@ MediaSourceStream.prototype._createSourceBuffer = function () {
   if (MediaSource.isTypeSupported(self._type)) {
     self._sourceBuffer = self._mediaSource.addSourceBuffer(self._type)
     self._sourceBuffer.addEventListener('updateend', self._flowHandler)
+    self._sourceBuffer.addEventListener('error', self._errorHandler)
     if (self._cb) {
       var cb = self._cb
       self._cb = null
@@ -178,8 +205,13 @@ MediaSourceStream.prototype._write = function (chunk, encoding, cb) {
     return cb(new Error('Cannot append buffer while source buffer updating'))
   }
 
+  var arr = toArrayBuffer(chunk)
+  if (self._wrapper._debug) {
+    self._debugBuffers.push(arr)
+  }
+
   try {
-    self._sourceBuffer.appendBuffer(toArrayBuffer(chunk))
+    self._sourceBuffer.appendBuffer(arr)
   } catch (err) {
     // appendBuffer can throw for a number of reasons, most notably when the data
     // being appended is invalid or if appendBuffer is called after another error
@@ -242,4 +274,11 @@ MediaSourceStream.prototype._getBufferDuration = function () {
   }
 
   return bufferedTime
+}
+
+function downloadBuffers (bufs, name) {
+  var a = document.createElement('a')
+  a.href = window.URL.createObjectURL(new window.Blob(bufs))
+  a.download = name
+  a.click()
 }

@@ -16,10 +16,10 @@
     "to-arraybuffer": "^1.0.1"
   },
   "devDependencies": {
+    "airtap": "0.0.4",
     "brfs": "^1.4.1",
     "standard": "*",
-    "tape": "^4.0.0",
-    "zuul": "^3.0.0"
+    "tape": "^4.0.0"
   },
   "homepage": "https://github.com/feross/mediasource",
   "keywords": [
@@ -39,7 +39,7 @@
     "url": "git://github.com/feross/mediasource.git"
   },
   "scripts": {
-    "test": "standard && zuul -- test/*.js",
-    "test-local": "zuul --local -- test/*.js"
+    "test": "standard && airtap -- test/*.js",
+    "test-local": "airtap --local -- test/*.js"
   }
 }
