@@ -70,8 +70,8 @@ test('call createWriteStream() twice immediately', function (t) {
 function createElem (tagName) {
   var elem = document.createElement(tagName)
   elem.controls = true
+  elem.muted = true // make autoplay work
   elem.autoplay = true // for chrome
-  elem.play() // for firefox
-  document.body.appendChild(elem)
+  document.body.prepend(elem)
   return elem
 }
