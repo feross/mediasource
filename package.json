@@ -16,7 +16,7 @@
     "to-arraybuffer": "^1.0.1"
   },
   "devDependencies": {
-    "airtap": "0.0.4",
+    "airtap": "0.0.5",
     "brfs": "^1.4.1",
     "standard": "*",
     "tape": "^4.0.0"
