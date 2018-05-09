@@ -1,1 +1,3 @@
-test/test.webm
+.airtap.yml
+.travis.yml
+test/
