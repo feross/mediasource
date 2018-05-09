@@ -73,6 +73,6 @@ function createElem (tagName) {
   elem.controls = true
   elem.muted = true // make autoplay work
   elem.autoplay = true // for chrome
-  document.body.prepend(elem)
+  document.body.insertBefore(elem, document.body.firstChild)
   return elem
 }
