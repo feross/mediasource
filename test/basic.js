@@ -4,7 +4,8 @@ var path = require('path')
 var stream = require('stream')
 var test = require('tape')
 
-var FILE = fs.readFileSync(path.join(__dirname, 'test.webm'))
+var FILE = fs.readFileSync(path.join(__dirname, 'test.mp4'))
+var CODEC_TYPE = 'video/mp4; codecs="avc1.42e01e"'
 
 test('basic test', function (t) {
   t.plan(2)
@@ -12,7 +13,7 @@ test('basic test', function (t) {
   var elem = createElem('video')
   var readable = new stream.PassThrough()
   var wrapper = new MediaElementWrapper(elem)
-  var writable = wrapper.createWriteStream('video/webm; codecs="vorbis, vp8"')
+  var writable = wrapper.createWriteStream(CODEC_TYPE)
 
   readable.on('error', function (err) { t.fail(err) })
   writable.on('error', function (err) { t.fail(err) })
@@ -42,7 +43,7 @@ test('call createWriteStream() twice immediately', function (t) {
   var readable = new stream.PassThrough()
   var wrapper = new MediaElementWrapper(elem)
 
-  var writable = wrapper.createWriteStream('video/webm; codecs="vorbis, vp8"')
+  var writable = wrapper.createWriteStream(CODEC_TYPE)
 
   t.doesNotThrow(function () {
     writable = wrapper.createWriteStream(writable)
