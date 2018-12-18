@@ -58,6 +58,11 @@ MediaElementWrapper.prototype.error = function (err) {
   try {
     self._mediaSource.endOfStream('decode')
   } catch (err) {}
+
+  try {
+    // Attempt to clean up object URL
+    window.URL.revokeObjectURL(self._elem.src)
+  } catch (err) {}
 }
 
 /*
