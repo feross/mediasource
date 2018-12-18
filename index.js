@@ -31,11 +31,7 @@ function MediaElementWrapper (elem, opts) {
   }
   self._elem.addEventListener('error', self._errorHandler)
 
-  try {
-    self._elem.srcObject = self._mediaSource
-  } catch (error) {
-    self._elem.src = window.URL.createObjectURL(self._mediaSource)
-  }
+  self._elem.srcObject = self._mediaSource
 }
 
 /*
