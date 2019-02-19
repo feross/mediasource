@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "airtap": "0.1.0",
-    "brfs": "^2.0.0",
+    "brfs": "^2.0.2",
     "standard": "*",
     "tape": "^4.0.0"
   },
