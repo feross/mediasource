@@ -1,3 +1,4 @@
+/*! mediasource. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = MediaElementWrapper
 
 var inherits = require('inherits')
