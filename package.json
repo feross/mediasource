@@ -19,7 +19,7 @@
     "airtap": "^2.0.3",
     "brfs": "^2.0.2",
     "standard": "*",
-    "tape": "^4.0.0"
+    "tape": "^5.0.1"
   },
   "homepage": "https://github.com/feross/mediasource",
   "keywords": [
