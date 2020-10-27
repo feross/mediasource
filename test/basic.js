@@ -7,6 +7,13 @@ var test = require('tape')
 var FILE = fs.readFileSync(path.join(__dirname, 'test.mp4'))
 var CODEC_TYPE = 'video/mp4; codecs="avc1.42e01e"'
 
+if (!window.MediaSource) {
+  test.only('MediaSource support', (t) => {
+    t.pass('browser lacks support')
+    t.end()
+  })
+}
+
 test('basic test', function (t) {
   t.plan(2)
 
