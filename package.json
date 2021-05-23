@@ -11,9 +11,7 @@
     "url": "https://github.com/feross/mediasource/issues"
   },
   "dependencies": {
-    "inherits": "^2.0.4",
-    "readable-stream": "^3.6.0",
-    "to-arraybuffer": "^1.0.1"
+    "readable-stream": "^3.6.0"
   },
   "devDependencies": {
     "airtap": "^3.0.0",

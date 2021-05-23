@@ -1,11 +1,11 @@
-var fs = require('fs')
-var MediaElementWrapper = require('../')
-var path = require('path')
-var stream = require('stream')
-var test = require('tape')
+const fs = require('fs')
+const path = require('path')
+const stream = require('stream')
+const test = require('tape')
+const MediaElementWrapper = require('../index.js')
 
-var FILE = fs.readFileSync(path.join(__dirname, 'test.mp4'))
-var CODEC_TYPE = 'video/mp4; codecs="avc1.42e01e"'
+const FILE = fs.readFileSync(path.join(__dirname, 'test.mp4'))
+const CODEC_TYPE = 'video/mp4; codecs="avc1.42e01e"'
 
 if (!window.MediaSource) {
   test.only('MediaSource support', (t) => {
@@ -14,19 +14,19 @@ if (!window.MediaSource) {
   })
 }
 
-test('basic test', function (t) {
+test('basic test', t => {
   t.plan(2)
 
-  var elem = createElem('video')
-  var readable = new stream.PassThrough()
-  var wrapper = new MediaElementWrapper(elem)
-  var writable = wrapper.createWriteStream(CODEC_TYPE)
+  const elem = createElem('video')
+  const readable = new stream.PassThrough()
+  const wrapper = new MediaElementWrapper(elem)
+  const writable = wrapper.createWriteStream(CODEC_TYPE)
 
-  readable.on('error', function (err) { t.fail(err) })
-  writable.on('error', function (err) { t.fail(err) })
-  elem.addEventListener('error', function (err) { t.fail(err) })
+  readable.on('error', err => { t.fail(err) })
+  writable.on('error', err => { t.fail(err) })
+  elem.addEventListener('error', err => { t.fail(err) })
 
-  elem.addEventListener('playing', function () {
+  elem.addEventListener('playing', () => {
     t.pass('got the "playing" event')
   })
 
@@ -43,24 +43,24 @@ test('basic test', function (t) {
 
 // Don't fail when createWriteStream() is called twice before mediasource opens
 // See: https://github.com/feross/mediasource/pull/5
-test('call createWriteStream() twice immediately', function (t) {
+test('call createWriteStream() twice immediately', t => {
   t.plan(3)
 
-  var elem = createElem('video')
-  var readable = new stream.PassThrough()
-  var wrapper = new MediaElementWrapper(elem)
+  const elem = createElem('video')
+  const readable = new stream.PassThrough()
+  const wrapper = new MediaElementWrapper(elem)
 
-  var writable = wrapper.createWriteStream(CODEC_TYPE)
+  let writable = wrapper.createWriteStream(CODEC_TYPE)
 
-  t.doesNotThrow(function () {
+  t.doesNotThrow(() => {
     writable = wrapper.createWriteStream(writable)
   })
 
-  readable.on('error', function (err) { t.fail(err) })
-  writable.on('error', function (err) { t.fail(err) })
-  elem.addEventListener('error', function (err) { t.fail(err) })
+  readable.on('error', err => { t.fail(err) })
+  writable.on('error', err => { t.fail(err) })
+  elem.addEventListener('error', err => { t.fail(err) })
 
-  elem.addEventListener('playing', function () {
+  elem.addEventListener('playing', () => {
     t.pass('got the "playing" event')
   })
 
@@ -76,7 +76,7 @@ test('call createWriteStream() twice immediately', function (t) {
 })
 
 function createElem (tagName) {
-  var elem = document.createElement(tagName)
+  const elem = document.createElement(tagName)
   elem.controls = true
   elem.muted = true // make autoplay work
   elem.autoplay = true // for chrome
